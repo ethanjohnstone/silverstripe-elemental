@@ -35,9 +35,23 @@ class ElementalContentControllerExtension extends Extension
         }
 
         foreach ($elementalAreaRelations as $elementalAreaRelation) {
-            $element = $elementOwner->$elementalAreaRelation()->Elements()
-                ->filter('ID', $id)
+            $elements = $elementOwner->$elementalAreaRelation()->Elements();
+
+            $virtualElementClass = "DNADesign\ElementalVirtual\Model\ElementVirtual";
+            if (class_exists($virtualElementClass)) {
+                $elements = $elements->leftJoin("ElementVirtual", "\"ElementVirtual\".\"ID\" = \"Element\".\"ID\"");
+            }
+
+            $element = $elements
+                ->filterAny([
+                    'ID' => $id,
+                    "LinkedElementID" => $id
+                ])
                 ->First();
+
+            if (class_exists($virtualElementClass) && $element instanceof $virtualElementClass) {
+                return $element->LinkedElement()->getController();
+            }
 
             if ($element) {
                 return $element->getController();
